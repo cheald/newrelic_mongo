@@ -77,3 +77,4 @@ begin
 rescue LoadError
   puts "sdoc support not enabled. Please gem install sdoc-helpers."
 end
+

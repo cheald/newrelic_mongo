@@ -21,12 +21,13 @@ Gem::Specification.new do |gem|
     "lib/newrelic_mongo.rb",
     "lib/newrelic_mongo/instrumentation.rb",
     "lib/newrelic_mongo/instrumentation/mongo.rb",
-    "lib/newrelic_mongo/instrumentation/mongoid.rb"
+    "lib/newrelic_mongo/instrumentation/mongoid.rb",
+    "lib/newrelic_mongo/instrumentation/mongomapper.rb"
   ]
   gem.homepage = "http://github.com/raphaelcm/newrelic_mongo"
   gem.rdoc_options = ["--line-numbers", "--inline-source", "--title", "Contributed Instrumentation for New Relic RPM", "-m", "README.md"]
   gem.require_paths = ["lib"]
-  gem.summary = "Mongo Gem and Mongoid 2.x instrumentation for NewRelic"
+  gem.summary = "10gen Mongo Driver, Mongoid 2.x, and MongoMapper instrumentation for NewRelic"
   gem.add_dependency 'newrelic_rpm', '~> 3.5'
   gem.add_dependency 'mongo', '~> 1.4'
 end
