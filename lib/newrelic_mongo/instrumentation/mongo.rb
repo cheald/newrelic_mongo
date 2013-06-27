@@ -1,14 +1,14 @@
 # Mongo Instrumentation originally contributed by Alexey Palazhchenko
 DependencyDetection.defer do
   @name = :mongodb
-  
+
   depends_on do
     defined?(::Mongo) and not NewRelic::Control.instance['disable_mongodb']
   end
 
   executes do
-    NewRelic::Agent.logger.debug 'Installing mongo-ruby-driver instrumentation'
-  end  
+    NewRelic::Agent.logger.info 'Installing mongo-ruby-driver instrumentation'
+  end
 
   executes do
     ::Mongo::Logging.class_eval do
@@ -18,15 +18,14 @@ DependencyDetection.defer do
         payload = {} if payload.nil?
         collection = payload[:collection]
         if collection == '$cmd'
-          f = payload[:selector].first
-          name, collection = f if f
-        end
-
-        trace_execution_scoped("Database/#{collection}/#{name}") do
-          t0 = Time.now
-          res = instrument_without_newrelic_trace(name, payload, &blk)
-          NewRelic::Agent.instance.transaction_sampler.notice_sql(payload.inspect, nil, (Time.now - t0).to_f)
-          res
+          instrument_without_newrelic_trace(name, payload, &blk)
+        else
+          trace_execution_scoped("Database/#{collection}/#{name}") do
+            t0 = Time.now
+            res = instrument_without_newrelic_trace(name, payload, &blk)
+            NewRelic::Agent.instance.transaction_sampler.notice_sql(payload.inspect, nil, (Time.now - t0).to_f)
+            res
+          end
         end
       end
 
