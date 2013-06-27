@@ -11,19 +11,32 @@ DependencyDetection.defer do
 
     class Plucky::Query
       include NewRelic::Agent::MethodTracer
-      # Slight override to Newrelic's tracing method definition. This allows us to include
-      # the model name in reporting of the traced code. :)
-      class << self
-        def method_with_push_scope_with_model_hack(method_name, metric_name_code, options)
-          method_with_push_scope_without_model_hack(method_name, metric_name_code, options).gsub(
-            /trace_execution_scoped\(\"(.*?)\"/m, 'trace_execution_scoped("\\1" % model.class'
-          )
+
+      def command_with_newrelic(command, *args)
+        if NewRelic::Agent::Instrumentation::MetricFrame.recording_web_transaction?
+          total_metric = 'Database/Mongo/allWeb'
+        else
+          total_metric = 'Database/Mongo/allOther'
         end
-        alias_method_chain :method_with_push_scope, :model_hack
+
+        metrics = ["Database/Mongo/#{model}\##{command.to_s}", total_metric]
+
+        self.class.trace_execution_scoped(metrics) do
+          start = Time.now
+          begin
+            send("#{command}_without_newrelic", *args)
+          ensure
+            s = NewRelic::Agent.instance.transaction_sampler
+            s.notice_nosql(args.inspect, (Time.now - start).to_f) rescue nil
+          end
+        end
       end
 
-      ::Plucky::Methods.each do |method|
-        add_method_tracer method, "Database/Mongo/%%s/#{method}"
+      %w(find_one find all last remove count distinct update cursor).each do |method|
+        define_method("#{method}_with_newrelic") do |*args|
+          command_with_newrelic(method, *args)
+        end
+        alias_method_chain method, :newrelic
       end
     end
   end
